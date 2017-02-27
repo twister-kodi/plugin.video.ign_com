@@ -253,9 +253,7 @@ def clean_url(title):
 
 
 def get_url(url):
-    req_url = base_url + url
-    xbmc.log(req_url)
-    req = urllib2.Request(req_url)
+    req = urllib2.Request(base_url + url)
     req.add_header('User-Agent',
                    'Mozilla/5.0 (X11; CrOS i686 2268.111.0) '
                    'AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11')
