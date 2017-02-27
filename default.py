@@ -13,6 +13,7 @@ socket.setdefaulttimeout(30)
 pluginhandle = int(sys.argv[1])
 addon = xbmcaddon.Addon(id='plugin.video.ign_com')
 translation = addon.getLocalizedString
+base_url = "http://www.ign.com"
 
 max_video_quality = addon.getSetting("maxVideoQualityRes")
 
@@ -28,19 +29,19 @@ max_video_quality = [640, 960, 1280, 1920][int(max_video_quality)]
 
 def index():
     if live_stream_setting:
-        content = get_url("http://www.ign.com")
+        content = get_url("")
         match = re.compile('"m3uUrl":"(.+?).m3u8"}', re.DOTALL).findall(content)
         if len(match) > 0:
             video_url = match[0].replace("\\", "")
             title = re.compile('data-video-title="(.+?)"', re.DOTALL).findall(content)
             add_link("***IGN-LIVESTREAM: " + title[0] + "***", video_url + ".m3u8", 'play_live_stream', "", "", "LIVE")
-    add_dir(translation(30002), "http://www.ign.com/videos/all/filtergalleryajax?filter=all", 'list_videos', "")
-    add_dir("IGN Daily Fix", "http://www.ign.com/watch/daily-fix?category=videos&page=1", 'list_series_episodes', "")
-    add_dir(translation(30003), "http://www.ign.com/videos/all/filtergalleryajax?filter=games-review", 'list_videos',
+    add_dir(translation(30002), "/videos/all/filtergalleryajax?filter=all", 'list_videos', "")
+    add_dir("IGN Daily Fix", "/watch/daily-fix?category=videos&page=1", 'list_series_episodes', "")
+    add_dir(translation(30003), "/videos/all/filtergalleryajax?filter=games-review", 'list_videos',
             "")
-    add_dir(translation(30004), "http://www.ign.com/videos/all/filtergalleryajax?filter=games-trailer", 'list_videos',
+    add_dir(translation(30004), "/videos/all/filtergalleryajax?filter=games-trailer", 'list_videos',
             "")
-    add_dir(translation(30005), "http://www.ign.com/videos/all/filtergalleryajax?filter=movies-trailer", 'list_videos',
+    add_dir(translation(30005), "/videos/all/filtergalleryajax?filter=movies-trailer", 'list_videos',
             "")
     add_dir("Podcasts", "", 'podcast_index', "")
 
@@ -51,13 +52,13 @@ def index():
 
 
 def podcast_index():
-    content = get_url("http://www.ign.com/")
+    content = get_url("/")
     match = re.compile(
         '<li class="ign-shows-list-container ign-transition">(.+?)</li>\s*<li class="ign-show ign-transition">',
         re.DOTALL).findall(content)
     podcasts = re.compile('<li><a href="(.+?)">(.+?)</a></li>', re.DOTALL).findall(match[0])
     for pod in podcasts:
-        add_dir(pod[1], "http://www.ign.com" + pod[0] + "?category=videos&page=1", 'list_series_episodes', "", pod[1])
+        add_dir(pod[1], pod[0] + "?category=videos&page=1", 'list_series_episodes', "", pod[1])
     xbmcplugin.endOfDirectory(pluginhandle)
     if force_view_mode:
         xbmc.executebuiltin('Container.SetViewMode(' + viewMode + ')')
@@ -92,7 +93,7 @@ def list_videos(url):
     match_page = re.compile('<a id="moreVideos" href="(.+?)"', re.DOTALL).findall(content)
     page_count = re.compile('<a id="moreVideos" href=".+?page=(.+?)\&.+?"', re.DOTALL).findall(content)
     if len(match_page) > 0:
-        url_next = "http://www.ign.com" + match_page[0]
+        url_next = match_page[0]
         add_dir(translation(30001) + " (" + str(page_count[0]) + ")", url_next, 'list_videos', "")
     xbmcplugin.endOfDirectory(pluginhandle)
     if force_view_mode:
@@ -118,7 +119,7 @@ def list_series_episodes(url):
     page_count = re.compile('<a class="next" href="://.+?page=(.+?)">Next&nbsp;&raquo;</a>', re.DOTALL).findall(content)
     if len(page_count) > 0:
         add_dir(translation(30001) + " (" + str(page_count[0]) + ")",
-                "http://www.ign.com" + match_page[0] + "&category=videos", 'list_series_episodes', "")
+                match_page[0] + "&category=videos", 'list_series_episodes', "")
     xbmcplugin.endOfDirectory(pluginhandle)
     if force_view_mode:
         xbmc.executebuiltin('Container.SetViewMode(' + viewMode + ')')
@@ -151,7 +152,7 @@ def search():
     keyboard.doModal()
     if keyboard.isConfirmed() and keyboard.getText():
         search_string = keyboard.getText().replace(" ", "+")
-        list_search_results('http://www.ign.com/search?q=' + search_string + '&page=0&count=10&type=video')
+        list_search_results('/search?q=' + search_string + '&page=0&count=10&type=video')
 
 
 def list_search_results(url):
@@ -187,8 +188,11 @@ def list_search_results(url):
 
 
 def play_video(page_url):
-    vid = Video(page_url)
+    match = re.compile(base_url + "(.+)", re.DOTALL).findall(page_url)
+    xbmc.log("match[0] " + match[0])
+    vid = Video(match[0])
     final_url = vid.get_url(max_video_height)
+    xbmc.log("final_url: " + final_url)
 
     list_item = xbmcgui.ListItem(path=final_url)
     return xbmcplugin.setResolvedUrl(pluginhandle, True, list_item)
@@ -249,7 +253,9 @@ def clean_url(title):
 
 
 def get_url(url):
-    req = urllib2.Request(str(url))
+    req_url = base_url + url
+    xbmc.log(req_url)
+    req = urllib2.Request(req_url)
     req.add_header('User-Agent',
                    'Mozilla/5.0 (X11; CrOS i686 2268.111.0) '
                    'AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11')
