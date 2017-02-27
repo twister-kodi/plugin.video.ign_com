@@ -7,7 +7,6 @@ import xbmcplugin
 import xbmcgui
 import sys
 import xbmcaddon
-import base64
 import socket
 
 socket.setdefaulttimeout(30)
@@ -15,17 +14,11 @@ pluginhandle = int(sys.argv[1])
 addon = xbmcaddon.Addon(id='plugin.video.ign_com')
 translation = addon.getLocalizedString
 
-live_stream = addon.getSetting("LiveStream")
-live_stream_setting = False
-if live_stream == "true":
-    live_stream_setting = True
-
 max_video_quality = addon.getSetting("maxVideoQualityRes")
-force_view_mode = addon.getSetting("force_view_mode")
-if force_view_mode == "true":
-    force__view__mode = True
-else:
-    force_view_mode = False
+
+force_view_mode = bool(addon.getSetting("force_view_mode"))
+live_stream_setting = bool(addon.getSetting("LiveStream"))
+
 viewMode = str(addon.getSetting("viewMode"))
 
 max_video_height = [360, 540, 720, 1080][int(max_video_quality)]
@@ -256,7 +249,7 @@ def clean_url(title):
 
 
 def get_url(url):
-    req = urllib2.Request(url)
+    req = urllib2.Request(str(url))
     req.add_header('User-Agent',
                    'Mozilla/5.0 (X11; CrOS i686 2268.111.0) '
                    'AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11')
